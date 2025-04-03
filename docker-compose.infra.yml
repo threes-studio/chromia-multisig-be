@@ -1,0 +1,34 @@
+services:
+  multisig-mongo:
+    image: mongo:3.6-jessie
+    container_name: multisig-mongo
+    restart: on-failure
+    ports:
+      - "27018:27017"
+    # command: [ --auth ]
+    volumes:
+      - "./mongo/data/db:/data/db"
+    networks:
+      - multisig
+
+  # multisig-redis:
+  #   image: 'redis:7-alpine'
+  #   container_name: multisig-redis
+  #   restart: always
+  #   ports:
+  #     - 6379:6379
+  #   volumes:
+  #     - .docker/redis/data/:/data
+  #     - .docker/redis/log/:/var/log/redis
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - REDIS_PASSWORD=${REDIS_PASSWORD}
+  #   command: [ "redis-server", "--requirepass", "${REDIS_PASSWORD}" ]
+  #   networks:
+  #     - multisig
+
+networks:
+  multisig:
+    name: multisig
+    driver: bridge

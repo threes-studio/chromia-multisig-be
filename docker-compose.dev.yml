@@ -1,0 +1,28 @@
+x-chromia-multisig-be: &chromia-multisig-be
+  image: chromia-multisig-be:latest
+  env_file:
+    - .env
+  deploy:
+    resources:
+      limits:
+        cpus: '0.25'
+        memory: 512M
+      reservations:
+        cpus: '0.25'
+        memory: 512M
+
+services:
+  chromia-multisig-be:
+    <<: *chromia-multisig-be
+    container_name: chromia-multisig-be
+    volumes:
+      - ./public/images:/app/public/images
+    restart: always
+    ports:
+      - 9000:9000
+    networks:
+      - multisig
+
+networks:
+  multisig:
+    external: true
