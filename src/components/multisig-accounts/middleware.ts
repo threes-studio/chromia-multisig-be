@@ -21,6 +21,8 @@ const baseSchema = {
     .min(1, 'The "signaturesRequired" field must be at least 1.')
     .max(20, 'The "signaturesRequired" field must not exceed 20.')
     .required('The "signaturesRequired" field is required.'),
+  network: yup.string().oneOf(['testnet', 'mainnet']).required('The "network" field is required.'),
+  blockchainRid: yup.string().required('The "blockchainRid" field is required.'),
 };
 
 const validateCreate = validateBody(

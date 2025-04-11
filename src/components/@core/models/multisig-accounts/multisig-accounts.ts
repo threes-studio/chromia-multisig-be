@@ -22,10 +22,12 @@ interface MultiSigAccount {
   readonly user?: string | User;
   readonly pendingTx?: any[];
   readonly status?: MultiSigAccountStatus;
+  readonly network?: 'testnet' | 'mainnet';
+  readonly blockchainRid?: string;
 }
 
 export {
-  MultiSigAccount,
-  MultiSigAccountStatus
+    MultiSigAccount,
+    MultiSigAccountStatus
 };
 

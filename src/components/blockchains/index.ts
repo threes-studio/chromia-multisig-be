@@ -4,11 +4,12 @@ import {
 } from '@utils/express';
 import { Router } from 'express';
 
-import { PLURAL_NAME } from './constants';
-import { count, create, del, get, getById, list, update } from './controller';
-import { validateCreate, validateUpdate } from './middleware';
-
+import { hasAuthorization } from '@components/auth/middleware';
+import { UserRole } from '@core/index';
 import { RoutesProps } from '../types';
+import { PLURAL_NAME } from './constants';
+import { create, get, getById, list, update } from './controller';
+import { validateCreate, validateUpdate } from './middleware';
 
 const path = `/${PLURAL_NAME}`;
 
@@ -19,15 +20,11 @@ const routes = (_: RoutesProps) => {
 
   router.route('/')
     .get(parseListQueryMiddleware, list)
-    .post(validateCreate, create);
-
-  router.route('/count')
-    .get(parseListQueryMiddleware, count);
+    .post(hasAuthorization([UserRole.Administrator]), validateCreate, create);
 
   router.route('/:id')
     .get(parseQueryMiddleware, get)
-    .put(validateUpdate, update)
-    .delete(del);
+    .put(hasAuthorization([UserRole.Administrator]), validateUpdate, update);
 
   return router;
 };

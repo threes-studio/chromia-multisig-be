@@ -56,6 +56,16 @@ const schema = new Schema<MultiSigAccount>({
     type: String,
     required: true,
   },
+  network: {
+    type: String,
+    enum: ['testnet', 'mainnet'],
+    default: 'testnet',
+    required: false,
+  },
+  blockchainRid: {
+    type: String,
+    required: false,
+  },
 });
 
 

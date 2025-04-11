@@ -34,6 +34,11 @@ const list = async (req: Request, res: Response, next: NextFunction) => {
       return next(new HttpError(BAD_REQUEST, 'User address is required'));
     }
 
+    const blockchainRid = query['blockchainRid'];
+    if (!blockchainRid) {
+      return next(new HttpError(BAD_REQUEST, 'blockchainRid is required'));
+    }
+
     const skip = page && limit ? (page - 1) * limit : 0;
     const options = { skip, limit };
 
@@ -103,6 +108,8 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
       }],
       accountId: multiSigAccount.accountId,
       authDescriptorId: multiSigAccount.mainDescriptor?.id,
+      network: multiSigAccount.network,
+      blockchainRid: multiSigAccount.blockchainRid,
     });
 
     res.send(object);
@@ -222,6 +229,8 @@ const execute = async (req: Request, res: Response, next: NextFunction) => {
         req[NAME].tx,
         req[NAME].signatures.map(s => s.pubKey),
         req[NAME].signatures.map(s => s.signature) as any,
+        req[NAME].network,
+        req[NAME].blockchainRid
       );
     }
   
@@ -239,6 +248,8 @@ const execute = async (req: Request, res: Response, next: NextFunction) => {
         req[NAME].tx,
         signatures as any,
         multiSigAccount.accountId,
+        req[NAME].network,
+        req[NAME].blockchainRid
       );
     }
 
@@ -254,6 +265,8 @@ const execute = async (req: Request, res: Response, next: NextFunction) => {
         signatures.map(s => s.signature) as any,
         Buffer.from(multiSigAccount.accountId, 'hex'),
         Buffer.from(multiSigAccount?.mainDescriptor.id, 'hex'),
+        req[NAME].network,
+        req[NAME].blockchainRid
       );
     }
 
@@ -272,7 +285,7 @@ const execute = async (req: Request, res: Response, next: NextFunction) => {
 
       if (req[NAME].type === TransactionType.Register) {
         // * Get main auth descriptor
-        const mainAuthDescriptor: any = await queryAuthDescriptor(multiSigAccount.accountId);
+        const mainAuthDescriptor: any = await queryAuthDescriptor(multiSigAccount.accountId, req[NAME].network, req[NAME].blockchainRid);
         if (mainAuthDescriptor && Object.keys(mainAuthDescriptor).length) {
           await MultiSigAccountReposity.update({
             id: multiSigAccount.id,
@@ -288,7 +301,7 @@ const execute = async (req: Request, res: Response, next: NextFunction) => {
       }
 
       if (req[NAME].type === TransactionType.UpdateDescriptor) {
-        const mainAuthDescriptor: any = await queryAuthDescriptor(multiSigAccount.accountId);
+        const mainAuthDescriptor: any = await queryAuthDescriptor(multiSigAccount.accountId, req[NAME].network, req[NAME].blockchainRid);
         await MultiSigAccountReposity.update({
           id: multiSigAccount.id,
           mainDescriptor: parseObjectBuffers(mainAuthDescriptor),

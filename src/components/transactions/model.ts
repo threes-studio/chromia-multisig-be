@@ -21,6 +21,7 @@ const schema = new Schema<Transaction>({
   ],
   assetId: { type: String, required: false },
   assetSymbol: { type: String, required: false },
+  assetDecimals: { type: Number, required: false, default: 18 },
   amount: { type: Number, required: false },
   signers: [{
     pubKey: {
@@ -98,6 +99,16 @@ const schema = new Schema<Transaction>({
   userAddress: {
     type: String,
     required: true,
+  },
+  network: {
+    type: String,
+    enum: ['testnet', 'mainnet'],
+    default: 'testnet',
+    required: false,
+  },
+  blockchainRid: {
+    type: String,
+    required: false,
   },
 });
 

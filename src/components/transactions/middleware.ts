@@ -8,6 +8,7 @@ const baseSchema = {
   amount: yup.number().required(),
   assetId: yup.string().required(),
   assetSymbol: yup.string().required(),
+  assetDecimals: yup.number().required(),
   multiSigAccount: yup.string().required(),
   userAddress: yup.string().matches(/^0x[a-fA-F0-9]{40}$/, 'User address must be a valid EVM address').required(),
   tx: yup.string().required('The "tx" field is required.'),

@@ -48,6 +48,7 @@ interface Transaction {
   
   readonly assetId?: string;
   readonly assetSymbol?: string;
+  readonly assetDecimals?: number;
   readonly amount?: number;
 
   readonly signers?: [{
@@ -73,6 +74,8 @@ interface Transaction {
   readonly authDescriptorId?: string;
   readonly recipient?: string;
   readonly userAddress?: string;
+  readonly network?: 'testnet' | 'mainnet';
+  readonly blockchainRid?: string;
 }
 
 export {

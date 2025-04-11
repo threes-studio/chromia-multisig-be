@@ -39,6 +39,12 @@ const list = async (req: Request, res: Response, next: NextFunction) => {
       return next(new HttpError(BAD_REQUEST, 'User address is required'));
     }
 
+    const blockchainRid = query['blockchainRid'];
+    if (!blockchainRid) {
+      return next(new HttpError(BAD_REQUEST, 'blockchainRid is required'));
+    }
+
+
     const skip = page && limit ? (page - 1) * limit : 0;
     const options = { skip, limit };
 
@@ -79,12 +85,13 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
 
     const signerPairExists = await Repository.findOne({
       signers: {
-      $all: signers.map(s => ({
-        $elemMatch: {
-        pubKey: s.pubKey,
-        },
-      })),
+        $all: signers.map(s => ({
+          $elemMatch: {
+          pubKey: s.pubKey,
+          },
+        })),
       },
+      blockchainRid: req.myBody.blockchainRid,
     });
 
     if (signerPairExists) {
@@ -95,7 +102,7 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
       return next(new HttpError(BAD_REQUEST, 'User must be part of the signers'));
     }
 
-    const accountId = await getAccountIdFromPublicKeyPair(signers.map(s => s.pubKey), signaturesRequired);
+    const accountId = await getAccountIdFromPublicKeyPair(signers.map(s => s.pubKey), signaturesRequired, req.myBody.network, req.myBody.blockchainRid);
     const payload: MultiSigAccount = {
       ...req.myBody,
       accountId,
@@ -116,7 +123,7 @@ const mockTransferFee = async (req: Request, res: Response, next: NextFunction) 
       return next(new HttpError(BAD_REQUEST, 'Invalid account Id'));
     }
 
-    await mockAdminTransferFee(accountId);
+    await mockAdminTransferFee(accountId, req.myBody.network, req.myBody.blockchainRid);
     res.send({
       message: 'OK',
     });
@@ -131,7 +138,7 @@ const mockTransferAsset = async (req: Request, res: Response, next: NextFunction
     if (!accountId) {
       return next(new HttpError(BAD_REQUEST, 'Invalid account Id'));
     }
-    await mockAdminTransferAsset(accountId);
+    await mockAdminTransferAsset(accountId, req.myBody.network, req.myBody.blockchainRid);
     res.send({
       message: 'OK',
     });
@@ -142,7 +149,7 @@ const mockTransferAsset = async (req: Request, res: Response, next: NextFunction
 
 const transferFee = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const pendingTxs: any = await getPendingTransfer(Buffer.from(req[NAME].accountId, 'hex'));
+    const pendingTxs: any = await getPendingTransfer(Buffer.from(req[NAME].accountId, 'hex'), req[NAME].network, req[NAME].blockchainRid);
     if (!pendingTxs.length) {
       return next(new HttpError(BAD_REQUEST, 'No pending transfer found'));
     }
@@ -201,6 +208,8 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
         signerName: signer.name,
         createdAt: new Date(),
       }],
+      network: req[NAME].network,
+      blockchainRid: req[NAME].blockchainRid,
     });
 
     res.send({
@@ -215,7 +224,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
 const updateAuthDescriptor = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { signaturesRequired, signers } = req.myBody;
-    const mainAuthDescriptor: any = await queryAuthDescriptor(req[NAME].accountId);
+    const mainAuthDescriptor: any = await queryAuthDescriptor(req[NAME].accountId, req[NAME].network, req[NAME].blockchainRid);
     const allSigners: {
       pubKey: string;
       name: string
@@ -239,6 +248,8 @@ const updateAuthDescriptor = async (req: Request, res: Response, next: NextFunct
       mainAuthDescriptor.id,
       newAuthDescriptor,
       allSigners.map(s => s.pubKey),
+      req[NAME].network,
+      req[NAME].blockchainRid
     );
 
     const transaction = await TransactionRepository.create({
@@ -272,7 +283,7 @@ const getById = async (req: Request, _: Response, next: NextFunction) => {
     }
 
     try {
-      const mainAuthDescriptor: any = await queryAuthDescriptor(object.accountId);
+      const mainAuthDescriptor: any = await queryAuthDescriptor(object.accountId, object.network, object.blockchainRid);
       if (mainAuthDescriptor && Object.keys(mainAuthDescriptor).length) {
         if (object.status === MultiSigAccountStatus.Created) {
           object = await Repository.update({
@@ -363,6 +374,8 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
       }],
       signersToUpdate: signers,
       signaturesRequiredToUpdate: signaturesRequired,
+      network: req[NAME].network,
+      blockchainRid: req[NAME].blockchainRid,
     });
 
     res.send({
@@ -376,7 +389,11 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
 
 const listAssets = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await getListTokensBalanceOf(req[NAME].accountId);
+    const result = await getListTokensBalanceOf(
+      req[NAME].accountId,
+      req[NAME].network,
+      req[NAME].blockchainRid
+    );
 
     res.send(result);
   } catch (err) {
@@ -408,4 +425,3 @@ export {
   update,
   updateAuthDescriptor
 };
-

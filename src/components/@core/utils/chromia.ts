@@ -16,9 +16,11 @@ import {
   evmAuth,
   evmSignatures,
   ftAuth,
+  getBalancesByAccountId,
   NONCE_PLACEHOLDER,
   nop,
   op,
+  pendingTransferStrategies,
   registerAccount,
   registerAccountMessage,
   registerAccountOp,
@@ -39,6 +41,18 @@ import {
   IClient,
   Operation,
 } from "postchain-client";
+
+const TESTNET_NODE_URL = [
+  'https://node0.testnet.chromia.com:7740',
+  'https://node1.testnet.chromia.com:7740',
+  'https://node2.testnet.chromia.com:7740',
+  'https://node3.testnet.chromia.com:7740',
+];
+
+const MAINNET_NODE_URL = [
+  'https://chromia-sp.bwarelabs.com:7740',
+  'https://chromia-api.hashkey.cloud:7740',
+];
 
 // Types
 export type StrategiesType = "basic" | "transfer" | "fee" | "";
@@ -74,10 +88,13 @@ export const adminKp: Keypair = {
 }
 
 // Client functions
-export const createChromiaClient = async () => createClient({
-  nodeUrlPool: [process.env.NODE_URL],
-  blockchainRid: process.env.BLOCKCHAIN_RID,
-});
+export const createChromiaClient = async (network: 'testnet' | 'mainnet', blockchainRid: string) => {
+  const nodeUrlPool = network === 'testnet' ? TESTNET_NODE_URL : MAINNET_NODE_URL;
+  return createClient({
+    nodeUrlPool,
+    blockchainRid,
+  });
+};
 
 // Asset functions
 export async function getAssetBySymbol(client: IClient, assetSymbol: string) {
@@ -117,28 +134,22 @@ export const getAccountId = (kp: Keypair) => {
   return gtv.gtvHash(store.id).toString("hex");
 };
 
-export const registerMultiSigAccount = async (kp: Keypair, assetSymbol: string) => {
-  const client = await createChromiaClient();
+export const registerMultiSigAccount = async (kp: Keypair, assetSymbol: string, network: 'testnet' | 'mainnet', blockchainRid: string) => {
+  const client = await createChromiaClient(network, blockchainRid);
   const asset = await getAssetBySymbol(client, assetSymbol);
   return await registerMultiSigAccountFeeFT(client, kp, asset);
 };
 
 // Transfer functions
-export async function getPendingTransfer(accountId: Buffer) {
-  const client = await createChromiaClient();
-  const pendings: any = await client.query("get_pending_transfer", {
-    recipient_id: accountId,
-  });
-
-  return pendings.map(item => ({
-    amount: Number(item.amount),
-    assetSymbol: item.asset_symbol,
-  }));
+export async function getPendingTransfer(accountId: Buffer, network: 'testnet' | 'mainnet', blockchainRid: string) {
+  const client = await createChromiaClient(network, blockchainRid);
+  const connection = await createConnection(client);
+    return await connection.query(pendingTransferStrategies(accountId));
 }
 
 // Auth descriptor functions
-export const queryAuthDescriptor = async (accountId: string) => {
-  const client = await createChromiaClient();
+export const queryAuthDescriptor = async (accountId: string, network: 'testnet' | 'mainnet', blockchainRid: string) => {
+  const client = await createChromiaClient(network, blockchainRid);
   return await client.query("ft4.get_account_main_auth_descriptor", { account_id: accountId });
 };
 
@@ -164,8 +175,10 @@ export const createUpdateMultiSigAuthDescriptorTx = async (
   authDescriptorId,
   authDescriptor,
   signers: (pcl.SignatureProvider | pcl.KeyPair)[],
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
 ) => {
-  const client = await createChromiaClient();
+  const client = await createChromiaClient(network, blockchainRid);
   const descriptor = updateMainAuthDescriptor(authDescriptor);
   const adId = Buffer.from(authDescriptorId, 'hex');
 
@@ -189,8 +202,10 @@ export const initMultiSigAuthDescriptorTx = async (
   newAuthDescriptor,
   signers: string[],
   keypair: pcl.SignatureProvider | pcl.KeyPair,
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
 ) => {
-  const client = await createChromiaClient();
+  const client = await createChromiaClient(network, blockchainRid);
   const descriptor = updateMainAuthDescriptor(newAuthDescriptor);
   const sortedSigners = signers.sort((a, b) => a.localeCompare(b));
   const adId = Buffer.from(authDescriptorId, 'hex');
@@ -218,8 +233,10 @@ export const initTransferFundTx = async (
   receiverAccountId,
   amount,
   assetId,
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
 ) => {
-  const client = await createChromiaClient();
+  const client = await createChromiaClient(network, blockchainRid);
   const sortedSigners = signers.sort((a, b) => a.localeCompare(b));
   const transferFundOp = op('ft4.transfer', Buffer.from(receiverAccountId, 'hex'), Buffer.from(assetId, 'hex'), BigInt(amount * 10 ** 18))
   const adId = Buffer.from(authDescriptorId, 'hex');
@@ -244,8 +261,10 @@ export const updateMultiSigAuthDescriptorTx = async (
   authDescriptorId,
   newAuthDescriptor,
   signers: string[],
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
 ) => {
-  const client = await createChromiaClient();
+  const client = await createChromiaClient(network, blockchainRid);
   const descriptor = updateMainAuthDescriptor(newAuthDescriptor);
   const sortedSigners = signers.sort((a, b) => a.localeCompare(b));
   const adId = Buffer.from(authDescriptorId, 'hex');
@@ -263,19 +282,32 @@ export const updateMultiSigAuthDescriptorTx = async (
   };
 };
 
-export const mockSignTx = async (signer: pcl.SignatureProvider | pcl.KeyPair, prevSignedTx: string) => {
-  const client = await createChromiaClient();
+export const mockSignTx = async (
+  signer: pcl.SignatureProvider | pcl.KeyPair, 
+  prevSignedTx: string,
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
+) => {
+  const client = await createChromiaClient(network, blockchainRid);
   const signedTx = await client.signTransaction(Buffer.from(prevSignedTx, 'hex'), signer);
   return signedTx.toString('hex');
 };
 
-export const executeTxUpdateDescriptor = async (signedTx: string) => {
-  const client = await createChromiaClient();
+export const executeTxUpdateDescriptor = async (
+  signedTx: string,
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
+) => {
+  const client = await createChromiaClient(network, blockchainRid);
   return await client.sendTransaction(Buffer.from(signedTx, 'hex'));
 };
 
-export const executeTx = async (signedTx: string) => {
-  const client = await createChromiaClient();
+export const executeTx = async (
+  signedTx: string,
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
+) => {
+  const client = await createChromiaClient(network, blockchainRid);
   return await client.sendTransaction(Buffer.from(signedTx, 'hex'));
 };
 
@@ -285,8 +317,12 @@ async function getEvmSession(client: IClient, kp: Keypair) {
   return await createKeyStoreInteractor(client, store).getSession(kp.accountId);
 }
 
-export const mockAdminTransferFee = async (accountId: string) => {
-  const client = await createChromiaClient();
+export const mockAdminTransferFee = async (
+  accountId: string,
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
+) => {
+  const client = await createChromiaClient(network, blockchainRid);
   const session = await getEvmSession(client, adminKp);
   const assetId = await getAssetBySymbol(client, "BUSC");
   
@@ -296,8 +332,12 @@ export const mockAdminTransferFee = async (accountId: string) => {
   });
 }
 
-export const mockAdminTransferAsset = async (accountId: string) => {
-  const client = await createChromiaClient();
+export const mockAdminTransferAsset = async (
+  accountId: string,
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
+) => {
+  const client = await createChromiaClient(network, blockchainRid);
   const session = await getEvmSession(client, adminKp);
 
   const assets = await Promise.all([
@@ -317,8 +357,12 @@ export const mockAdminTransferAsset = async (accountId: string) => {
 }
 
 // Account validation
-export async function isAccountExist(kp: { privKey: Buffer; pubKey: Buffer }) {
-  const client = await createChromiaClient();
+export async function isAccountExist(
+  kp: { privKey: Buffer; pubKey: Buffer },
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
+) {
+  const client = await createChromiaClient(network, blockchainRid);
   const store = createInMemoryFtKeyStore(kp);
   const evmKeyStoreInteractor = createKeyStoreInteractor(client, store);
   const accounts = await evmKeyStoreInteractor.getAccounts();
@@ -326,34 +370,25 @@ export async function isAccountExist(kp: { privKey: Buffer; pubKey: Buffer }) {
 }
 
 // Balance functions
-export async function getListTokensBalanceOf(pubKey: string) {
+export async function getListTokensBalanceOf(
+  pubKey: string,
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
+) {
   try {
-    const chromiaClient = await createChromiaClient();
-    
-    const allTokens = (await chromiaClient.query('get_all_asset') as unknown) as IAsset[];
-    const balances = (await chromiaClient.query("get_list_tokens_balance_of", {
-      user: pubKey,
-    }) as unknown) as IAssetBalance[];
-
-    return balances.map(balance => {
-      const token = allTokens.find(t => Buffer.isBuffer(t.id) && Buffer.isBuffer(balance.id) && t.id.equals(balance.id));
-      if (!token) return null;
-
-      const amount = new BigNumber(balance.amount.toString());
-      const decimals = new BigNumber(10).pow(token.decimals);
-      const price = amount.dividedBy(decimals);
-
+    const chromiaClient = await createChromiaClient(network, blockchainRid);
+    const allTokens = await getBalancesByAccountId(chromiaClient, Buffer.from(pubKey, 'hex'));
+    return allTokens.data.map((asset) => {
+      const { asset: token, amount } = asset;
       return {
         id: token.id.toString('hex'),
         symbol: token.symbol,
         name: token.name,
-        amount: price.toString(),
-        circulatingSupply: token.circulating_supply,
-        totalSupply: token.total_supply,
+        amount: BigNumber(amount.value.toString()).div(BigNumber(10).pow(token.decimals)).toString(),
         decimals: token.decimals,
-        iconUrl: token.icon_url,
-      };
-    }).filter(Boolean);
+        iconUrl: token.iconUrl,
+      }
+    });
   } catch (error) {
     console.error("Error fetching list tokens balance:", error);
     return [];
@@ -371,8 +406,10 @@ export function getAccountIdFromAuthDescriptor(authDescriptor: any): Buffer {
 export async function getAccountIdFromPublicKeyPair(
   signers: string[],
   signaturesRequired: number,
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
 ): Promise<string> {
-  const client = await createChromiaClient();
+  const client = await createChromiaClient(network, blockchainRid);
   const connection = await createConnection(client);
   const bufferSigners = signers.map(getEvmAddress);
   const multiAD = createMultiSigAuthDescriptorRegistration(
@@ -390,9 +427,11 @@ export async function createRegisterAccountTx(
   signatures: Signature[] | string[],
   strategyType: StrategiesType = "transfer",
   feeAsset: Asset | null = null,
-  registerAccountOperation: Operation = registerAccountOp()
+  registerAccountOperation: Operation = registerAccountOp(),
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
 ) {
-  const client = await createChromiaClient();
+  const client = await createChromiaClient(network, blockchainRid);
   const connection = await createConnection(client);
 
   let strategy: Strategy;
@@ -465,8 +504,10 @@ export async function sendRegisterAccountTx(
     s: string,
     v: number,
   }],
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
 ) {
-  const client = await createChromiaClient();
+  const client = await createChromiaClient(network, blockchainRid);
   const decodeTx = Buffer.from(tx, 'hex');  
   const transaction = gtx.deserialize(decodeTx);
   const sortedSigners = signers.map(getEvmAddress);
@@ -493,8 +534,10 @@ export async function sendTransferAssetTx(
     v: number,
   }],
   accountId,
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
 ) {
-  const client = await createChromiaClient();
+  const client = await createChromiaClient(network, blockchainRid);
   const decodeTx = Buffer.from(tx, 'hex');  
   const transaction = gtx.deserialize(decodeTx);
   const sortedSignatures = signatures.map(sig => {
@@ -506,7 +549,7 @@ export async function sendTransferAssetTx(
     }
   });
 
-  const multiAD: any = await queryAuthDescriptor(accountId.toString('hex'));
+  const multiAD: any = await queryAuthDescriptor(accountId.toString('hex'), network, blockchainRid);
   const evmAuthOp = evmAuth(accountId, multiAD.id, sortedSignatures);
 
   transaction.operations[0] = {
@@ -527,8 +570,10 @@ export async function sendUpdateAuthDescriptorAccountTx(
   }],
   accountId: Buffer,
   descriptorId: Buffer,
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
 ) {
-  const client = await createChromiaClient();
+  const client = await createChromiaClient(network, blockchainRid);
   const decodeTx = Buffer.from(tx, 'hex');  
   const transaction = gtx.deserialize(decodeTx);
   
@@ -561,8 +606,10 @@ async function getUpdateAccountMessage(
   signaturesRequired: number,
   accountId: Buffer,
   descriptorId: Buffer,
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
 ): Promise<string> {
-  const client = await createChromiaClient();
+  const client = await createChromiaClient(network, blockchainRid);
   const connection = await createConnection(client);
   const authDataService = createAuthDataService(connection);
 
@@ -576,15 +623,15 @@ async function getUpdateAccountMessage(
   const operation = updateMainAuthDescriptor(multiAD)
   const messageTemplate = await authDataService.getAuthMessageTemplate(operation);
   const counter = await authDataService.getAuthDescriptorCounter(accountId, descriptorId);
-  const blockchainRid = authDataService.getBlockchainRid();
+  const currentBlockchainRid = authDataService.getBlockchainRid();
   
   return messageTemplate
     .replace(
       ACCOUNT_ID_PLACEHOLDER,
       formatter.toString(formatter.ensureBuffer(accountId)),
     )
-    .replace(BLOCKCHAIN_RID_PLACEHOLDER, formatter.toString(blockchainRid))
-    .replace(NONCE_PLACEHOLDER, deriveNonce(blockchainRid, operation, counter || 0));
+    .replace(BLOCKCHAIN_RID_PLACEHOLDER, formatter.toString(currentBlockchainRid))
+    .replace(NONCE_PLACEHOLDER, deriveNonce(currentBlockchainRid, operation, counter || 0));
 }
 
 export async function verifyMessageSignature(
@@ -597,6 +644,8 @@ export async function verifyMessageSignature(
   pubKey: string,
   accountId: Buffer,
   descriptorId: Buffer,
+  network: 'testnet' | 'mainnet',
+  blockchainRid: string
 ) {
   const signature = {
     r: Buffer.from(sig.r, 'hex'),
@@ -608,6 +657,8 @@ export async function verifyMessageSignature(
     2,
     accountId,
     descriptorId,
+    network,
+    blockchainRid
   )
   const signA = ft4SignatureToEthersSignature(signature);
   const signer = verifyMessage(message, signA);
