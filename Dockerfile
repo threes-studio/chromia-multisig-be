@@ -17,4 +17,4 @@ RUN yarn build
 # Remove dev dependencies to reduce image size
 RUN yarn install --production --frozen-lockfile
 
-CMD ["node", "build/index.js"]
+CMD ["node", "dist/index.js"]
