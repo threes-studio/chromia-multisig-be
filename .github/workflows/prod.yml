@@ -1,0 +1,72 @@
+name: Build and Deploy to Amazon ECS
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.github/workflows/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-southeast-1                  
+  ECS_CLUSTER_NAME: prd-chromia-dex-ecs-cluster
+  ECR_REPOSITORY: prd-chromia-dex-ecr
+  ENVIRONMENT: prd
+  
+
+jobs:
+  deploy:
+    name: Build and Deploy to ECS
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Assume AWS Role
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-region: ${{ env.AWS_REGION }}
+        role-to-assume: arn:aws:iam::828012841216:role/3s-github-cicd
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Set Environment Variables
+      run: |
+        echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+        echo "IMAGE_TAG=be-api-${{ github.sha }}" >> $GITHUB_ENV
+        echo "IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:be-api-${{ github.sha }}" >> $GITHUB_ENV
+
+    - name: Build and Push Docker Image to ECR
+      run: |
+        docker build -f Dockerfile . -t $IMAGE_URI
+        echo "Build completed on $(date)"
+        docker push $IMAGE_URI
+        docker tag $IMAGE_URI $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
+        docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
+        echo "Docker push complete"
+
+    - name: Verify Image Exists in ECR Before ECS Update
+      run: |
+        if aws ecr describe-images --repository-name ${{ env.ECR_REPOSITORY }} --image-ids imageTag=$IMAGE_TAG > /dev/null 2>&1; then
+          echo "Image $IMAGE_URI exists in ECR."
+        else
+          echo "Error: Image $IMAGE_URI not found in ECR!"
+          exit 1
+        fi
+
+    - name: Update All ECS Services in Cluster
+      run: |
+        SERVICES=$(aws ecs list-services --cluster $ECS_CLUSTER_NAME --query "serviceArns[]" --output text)
+        if [[ -z "$SERVICES" ]]; then
+          echo "No ECS services found in cluster $ECS_CLUSTER_NAME."
+          exit 1
+        fi
+        echo "Updating ECS services in cluster: $ECS_CLUSTER_NAME"
+        echo "$SERVICES" | tr '\t' '\n' | xargs -P 5 -I {} aws ecs update-service --cluster $ECS_CLUSTER_NAME --service {} --force-new-deployment
