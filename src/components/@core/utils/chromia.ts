@@ -81,11 +81,18 @@ export interface IAssetBalance {
 }
 
 // Constants
-export const adminKp: Keypair = {
-  privKey: Buffer.from(process.env.ADMIN_PRIVATE_KEY, "hex"),
-  pubKey: Buffer.from(process.env.ADMIN_PUBLIC_KEY, "hex"),
-  accountId: Buffer.from(process.env.ADMIN_ACCOUNT_ID, "hex"),
-}
+export const adminKp: Keypair = (() => {
+  const privKey = process.env.ADMIN_PRIVATE_KEY;
+  const pubKey = process.env.ADMIN_PUBLIC_KEY;
+  const accountId = process.env.ADMIN_ACCOUNT_ID;
+
+  // Fallback to empty buffers if environment variables are missing
+  return {
+    privKey: privKey ? Buffer.from(privKey, "hex") : Buffer.alloc(0),
+    pubKey: pubKey ? Buffer.from(pubKey, "hex") : Buffer.alloc(0),
+    accountId: accountId ? Buffer.from(accountId, "hex") : Buffer.alloc(0),
+  };
+})();
 
 // Client functions
 export const createChromiaClient = async (network: 'testnet' | 'mainnet', blockchainRid: string) => {
