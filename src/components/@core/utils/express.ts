@@ -243,7 +243,10 @@ const handleNotFound = (_: Request, __: Response, next: NextFunction) => {
 const handleErrors = (err: HttpError, _: Request, res: Response, __: NextFunction) => {
   errorHandler.handle(err);
 
-  res.status(err.code).send(err);
+  res.status(err.code).send({
+    code: err.code,
+    message: err.message
+  });
 };
 
 export {
