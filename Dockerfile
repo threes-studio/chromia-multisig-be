@@ -14,6 +14,9 @@ COPY . .
 # Build the application
 RUN yarn build
 
+# Install curl
+RUN apk update && apk add --no-cache curl
+
 # Remove dev dependencies to reduce image size
 RUN yarn install --production --frozen-lockfile
 
