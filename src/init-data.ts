@@ -2,6 +2,7 @@ import AccountRepository from '@components/accounts/repository';
 import BlockchainRepository from '@components/blockchains/repository';
 import UserRepository from '@components/users/repository';
 import { Account, AccountProvider, Blockchain, User, UserRole } from '@core/models';
+import logger from '@utils/logger';
 
 const users: ReadonlyArray<User> = [{
   _id: '6060490dc3b9792245fd5886',
@@ -76,7 +77,7 @@ const initData = async () => {
   // * generated data for blockchains
   await BlockchainRepository.generatedDedicatedData(blockchains);
 
-  console.info('> Initialized data successfully');
+  logger.info('> Initialized data successfully');
 };
 
 export default initData;

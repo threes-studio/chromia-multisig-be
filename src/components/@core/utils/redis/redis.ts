@@ -1,3 +1,4 @@
+import logger from '@utils/logger';
 import Redis from 'ioredis';
 
 const redis: any = new Redis({
@@ -10,9 +11,9 @@ const redis: any = new Redis({
 async function setRedisKey(key, value) {
   try {
     await redis.set(key, value);
-    // console.log(`Key: ${key} saved with value: ${value}`);
+    // logger.debug(`Key: ${key} saved with value: ${value}`);
   } catch (err) {
-    console.error('Error setting key:', err);
+    logger.error('Error setting key:', err);
   }
 }
 
@@ -20,19 +21,19 @@ async function getRedisKey(key): Promise<string> {
   try {
     const value = await redis.get(key);
     if (value) {
-      // console.log(`Value for key ${key}: ${value}`);
+      // logger.debug(`Value for key ${key}: ${value}`);
       return value;
     } else {
-      console.log(`No value found for key ${key}`);
+      logger.info(`No value found for key ${key}`);
       return null;
     }
   } catch (err) {
-    console.error('Error getting key:', err);
+    logger.error('Error getting key:', err);
     return null;
   }
 }
 
 export {
-  getRedisKey, setRedisKey
+    getRedisKey, setRedisKey
 };
 

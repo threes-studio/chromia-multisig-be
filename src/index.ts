@@ -1,9 +1,9 @@
 require('dotenv').config();
+
 import db from '@utils/db';
 import errorHandler from '@utils/error-handler';
 import logger from '@utils/logger';
 import mongoose from 'mongoose';
-
 
 // declare env vars
 const host = process.env.HOST || 'localhost';

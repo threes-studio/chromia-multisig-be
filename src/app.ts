@@ -5,6 +5,7 @@ import morgan from 'morgan';
 
 import { handleErrors, handleNotFound } from '@utils/express';
 import { isDev } from '@utils/index';
+import logger from '@utils/logger';
 
 import passport from '@core/utils/passport';
 import routes from './routes';
@@ -27,7 +28,7 @@ const startApp = () => {
   // Middleware to handle JSON parsing errors
   app.use((err: any, _: any, res: any, next: any) => {
     if (err instanceof SyntaxError && (err as any).status === 400 && 'body' in err) {
-        console.error('Invalid JSON:', err.message);
+        logger.error('Invalid JSON:', err.message);
         return res.status(400).json({ error: 'Invalid JSON payload' });
     }
     next();

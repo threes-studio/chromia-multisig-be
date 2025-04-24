@@ -4,7 +4,6 @@ import { HttpError } from '@utils/error';
 import { ListQuery, Query } from '@utils/express';
 import { Request as ExpressRequest, NextFunction, Response } from 'express';
 import { BAD_REQUEST, INTERNAL_SERVER_ERROR } from 'http-status-codes';
-
 type Request = ExpressRequest & {
   readonly myQuery: ListQuery | Query,
   readonly myBody: any,
