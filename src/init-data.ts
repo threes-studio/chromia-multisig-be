@@ -36,7 +36,7 @@ const testnetBlockchains: ReadonlyArray<Blockchain> = [
     feeValue: 10,
       feeDecimals: 6,
       isActive: true,
-    },
+  },
   {
     _id: '67f7410c66f271df0519a446',
     name: 'Bridge cp2',
@@ -87,7 +87,7 @@ const mainnetBlockchains: ReadonlyArray<Blockchain> = [
   {
     _id: '67f7412266f271df0519a44a',
     name: 'Colorpool dex',
-    rid: '4D1A5A875B2534A7BECA654AA85FD191C1A09EA71836431305AE23F7E6F3A1D9',
+    rid: '19571DCB739CCDDC4BC8B96A01C7BDE9FCC389B566DD1B85737E892695674288',
     network: 'mainnet',
     feeId: '9BACD576F40B6674AA76B8BFA1330077A3B94F581BFDB2EF806122C384DCDF25',
     feeSymbol: 'USDC',
