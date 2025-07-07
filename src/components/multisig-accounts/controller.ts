@@ -1,5 +1,5 @@
 import {
-    AuthType,
+  AuthType,
 } from '@chromia/ft4';
 import { MultiSigAccount, MultiSigAccountStatus, TransactionLogAction, TransactionType, User } from '@core/models';
 import { HttpError } from '@utils/error';
@@ -8,13 +8,13 @@ import { Request as ExpressRequest, NextFunction, Response } from 'express';
 import { BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND } from 'http-status-codes';
 
 import {
-    getAccountIdFromPublicKeyPair,
-    getListTokensBalanceOf,
-    getPendingTransfer,
-    mockAdminTransferAsset,
-    mockAdminTransferFee,
-    parseObjectBuffers, queryAuthDescriptor,
-    updateMultiSigAuthDescriptorTx
+  getAccountIdFromPublicKeyPair,
+  getListTokensBalanceOf,
+  getPendingTransfer,
+  mockAdminTransferAsset,
+  mockAdminTransferFee,
+  parseObjectBuffers, queryAuthDescriptor,
+  updateMultiSigAuthDescriptorTx
 } from '@core/utils/chromia';
 import logger from '@utils/logger';
 import TransactionRepository from '../transactions/repository';
@@ -295,7 +295,6 @@ const getById = async (req: Request, _: Response, next: NextFunction) => {
       }
     } catch (err) {
       logger.error('Error updating multisig account', err);
-      next(new HttpError(INTERNAL_SERVER_ERROR, err));
     }
 
     // tslint:disable-next-line:no-object-mutation
@@ -413,18 +412,18 @@ const del = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 export {
-    count,
-    create,
-    del,
-    get,
-    getById,
-    list,
-    listAssets,
-    mockTransferAsset,
-    mockTransferFee,
-    register,
-    transferFee,
-    update,
-    updateAuthDescriptor
+  count,
+  create,
+  del,
+  get,
+  getById,
+  list,
+  listAssets,
+  mockTransferAsset,
+  mockTransferFee,
+  register,
+  transferFee,
+  update,
+  updateAuthDescriptor
 };
 
