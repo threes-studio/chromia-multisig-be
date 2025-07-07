@@ -1,46 +1,46 @@
 import {
-    ACCOUNT_ID_PLACEHOLDER,
-    aggregateSigners,
-    Asset,
-    AuthFlag,
-    BLOCKCHAIN_RID_PLACEHOLDER,
-    compactArray,
-    createAuthDataService,
-    createConnection,
-    createInMemoryEvmKeyStore,
-    createInMemoryFtKeyStore,
-    createKeyStoreInteractor,
-    createMultiSigAuthDescriptorRegistration,
-    createSingleSigAuthDescriptorRegistration,
-    deriveNonce,
-    evmAuth,
-    evmSignatures,
-    ftAuth,
-    getBalancesByAccountId,
-    NONCE_PLACEHOLDER,
-    nop,
-    op,
-    pendingTransferStrategies,
-    registerAccount,
-    registerAccountMessage,
-    registerAccountOp,
-    registrationStrategy,
-    Signature,
-    Strategy,
-    updateMainAuthDescriptor
+  ACCOUNT_ID_PLACEHOLDER,
+  aggregateSigners,
+  Asset,
+  AuthFlag,
+  BLOCKCHAIN_RID_PLACEHOLDER,
+  compactArray,
+  createAuthDataService,
+  createConnection,
+  createInMemoryEvmKeyStore,
+  createInMemoryFtKeyStore,
+  createKeyStoreInteractor,
+  createMultiSigAuthDescriptorRegistration,
+  createSingleSigAuthDescriptorRegistration,
+  deriveNonce,
+  evmAuth,
+  evmSignatures,
+  ftAuth,
+  getBalancesByAccountId,
+  NONCE_PLACEHOLDER,
+  nop,
+  op,
+  pendingTransferStrategies,
+  registerAccount,
+  registerAccountMessage,
+  registerAccountOp,
+  registrationStrategy,
+  Signature,
+  Strategy,
+  updateMainAuthDescriptor
 } from '@chromia/ft4';
 import logger from '@utils/logger';
 import BigNumber from "bignumber.js";
 import { ethers, verifyMessage } from 'ethers';
 import * as pcl from "postchain-client";
 import {
-    createClient,
-    formatter,
-    gtv,
-    GTX,
-    gtx,
-    IClient,
-    Operation,
+  createClient,
+  formatter,
+  gtv,
+  GTX,
+  gtx,
+  IClient,
+  Operation,
 } from "postchain-client";
 
 const TESTNET_NODE_URL = [
@@ -51,8 +51,8 @@ const TESTNET_NODE_URL = [
 ];
 
 const MAINNET_NODE_URL = [
-  'https://chromia-sp.bwarelabs.com:7740',
-  'https://chromia-api.hashkey.cloud:7740',
+  'https://dapps0.chromaway.com',
+  'https://chromia-mainnet.w3coins.io:7740',
 ];
 
 // Types
